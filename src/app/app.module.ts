@@ -1,3 +1,4 @@
+import { ProductService } from './shared/product.service';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +21,7 @@ const routConfig: Routes = [
     component: HomeComponent
   },
   {
-    path: 'product/:prodTitle',
+    path: 'product/:productId',
     component: ProductDetailComponent
   }
 ];
@@ -43,7 +44,7 @@ const routConfig: Routes = [
     HttpModule,
     RouterModule.forRoot(routConfig)
   ],
-  providers: [],
+  providers: [ProductService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
