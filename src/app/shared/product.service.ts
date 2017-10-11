@@ -1,37 +1,22 @@
-import {Injectable} from '@angular/core';
+import {EventEmitter, Injectable} from '@angular/core';
+import {Http} from '@angular/http';
+import {Observable} from 'rxjs/Observable';
+import 'rxjs/Rx';
 
 @Injectable()
 export class ProductService {
-    /**
-     * 初始化一些商品
-     * @type {[Product , Product , Product , Product]}
-     */
-    private products: Product[] = [
-        new Product(1, '第一个商品', 1.99, 3.4, '这是第一个商品', ['电子产品', '硬件设施']),
-        new Product(2, '第二个商品', 1.99, 4, '这是第二个商品', ['电子产品', '硬件设施']),
-        new Product(3, '第三个商品', 1.99, 5, '这是第三个商品', ['电子产品', '硬件设施']),
-        new Product(4, '第四个商品', 1.99, 1, '这是第四个商品', ['电子产品', '硬件设施'])
-    ];
-    /**
-     * 初始化一些商品的评论信息
-     * @type {[Comment , Comment , Comment , Comment]}
-     */
-    private comments: Comment[] = [
-        new Comment(1, 1, '2017-03-23 21:09:22', 'Allen', 3, '产品很不错'),
-        new Comment(2, 1, '2017-04-23 21:09:22', 'Lvy', 4, '产品很不错，我喜欢'),
-        new Comment(3, 1, '2017-05-23 21:09:22', 'Ani', 5, '很好'),
-        new Comment(4, 2, '2017-06-23 21:09:22', 'Young', 3, '很不错')
-    ];
 
-    constructor() {
+    searchEvent: EventEmitter<ProductSearchParams> = new EventEmitter();
+
+    constructor(private http: Http) {
     }
 
     /**
      * 获取所有商品
      * @returns {Product[]}
      */
-    getProducts(): Product[] {
-        return this.products;
+    getProducts(): Observable<Product[]> {
+        return this.http.get('/api/products').map(res => res.json());
     }
 
     /**
@@ -39,17 +24,50 @@ export class ProductService {
      * @param {number} id
      * @returns {Product}
      */
-    getProduct(id: number): Product {
-        return this.products.find((product) => product.id === id);
+    getProduct(id: number): Observable<Product> {
+        return this.http.get('/api/product/' + id).map(res => res.json());
     }
 
     /**
      * 根据产品id获取该产品的评论信息
      * @param {number} id - 需要获取评论信息的产品的产品id
-     * @returns {Comment[]}
+     * @returns {Observable<Comment[]>} - 该Id对应的评论的数组
      */
-    getCommentsForProductId(id: number): Comment[] {
-        return this.comments.filter((comment: Comment) => comment.productId === id);
+    getCommentsForProductId(id: number): Observable<Comment[]> {
+        return this.http.get(`/api/product/${id}/comments`).map(res => res.json());
+    }
+
+    /**
+     * 获取所有的商品的分类
+     * @returns {string[]} - 商品分类名称
+     */
+    getAllCategories(): string[] {
+        return ['电子产品', '硬件设施', '图书'];
+    }
+
+    /**
+     * 商品搜索
+     * @param {ProductSearchParams} params - 搜索参数
+     * @returns {Observable<Product[]>} - 符合条件的商品
+     */
+    search(params: ProductSearchParams): Observable<Product[]> {
+        return this.http.get('/api/products', {search: this.encodeParams(params)}).map(res => res.json());
+    }
+
+    /**
+     * 搜索参数处理
+     * @param {ProductSearchParams} params - 转入的搜索数据
+     * @returns {string} - 返回一个字符串
+     */
+    encodeParams(params: ProductSearchParams) {
+        return Object.keys(params).filter(key => params[key]).reduce((param: string, key: string) => {
+            if (param) {
+                param += `&&${key}=${params[key]}`;
+            } else {
+                param += `${key}=${params[key]}`;
+            }
+            return param;
+        }, '');
     }
 }
 
@@ -88,5 +106,16 @@ export class Comment {
                 public user: string,
                 public rating: number,
                 public content: string) {
+    }
+}
+
+export class ProductSearchParams {
+    /**
+     *
+     * @param {string} title - 搜索的商品的名称
+     * @param {number} price - 搜索的价格
+     * @param {string} category - 搜索的商品所属的商品分类
+     */
+    constructor(public title: string, public price: number, public category: string) {
     }
 }

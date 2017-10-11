@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {Product, ProductService} from '../shared/product.service';
-import {FormControl} from '@angular/forms';
 import 'rxjs/Rx';
+import {Observable} from 'rxjs/Observable';
 
 @Component({
     selector: 'app-product',
@@ -10,17 +10,14 @@ import 'rxjs/Rx';
 })
 export class ProductComponent implements OnInit {
     public imgUrl = 'http://placehold.it/320x150';
-    public products: Product[];
-    // 搜索商品的关键字
-    public keyWord: string;
-    public titleFilter: FormControl = new FormControl();
+    public products: Observable<Product[]>;
 
     constructor(private productService: ProductService) {
-        this.titleFilter.valueChanges.debounceTime(500).subscribe(value => this.keyWord = value);
     }
 
     ngOnInit() {
         this.products = this.productService.getProducts();
+        this.productService.searchEvent.subscribe(params => this.products = this.productService.search(params));
     }
 
 }
