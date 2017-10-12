@@ -1,6 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {Comment, Product, ProductService} from '../shared/product.service';
+import {WebSocketService} from '../shared/web-socket.service';
+import {Subscription} from 'rxjs/Subscription';
 
 @Component({
     selector: 'app-product-detail',
@@ -16,14 +18,21 @@ export class ProductDetailComponent implements OnInit {
     // 默认的评论内容
     public newComment = '';
     public isCommentHidden = true;
+    public isWatched = false;
+    public currentBid: number;
+    public subscription: Subscription;
 
     constructor(private routeInfo: ActivatedRoute,
-                private productService: ProductService) {
+                private productService: ProductService,
+                private wsService: WebSocketService) {
     }
 
     ngOnInit() {
         const productId: number = Number.parseInt(this.routeInfo.snapshot.params['productId']);
-        this.productService.getProduct(productId).subscribe(product => this.product = product);
+        this.productService.getProduct(productId).subscribe(product => {
+            this.product = product;
+            this.currentBid = this.product.price;
+        });
         this.productService.getCommentsForProductId(productId).subscribe(comments => this.comments = comments);
     }
 
@@ -39,6 +48,22 @@ export class ProductDetailComponent implements OnInit {
         this.newComment = null;
         this.newRating = 5;
         this.isCommentHidden = true;
+    }
+
+    watchProduct() {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+            this.isWatched = false;
+            this.subscription = null;
+        } else {
+            this.isWatched = true;
+            this.subscription = this.wsService.createObservableSoket('ws://localhost:8085', this.product.id)
+                .subscribe(products => {
+                    const product = products.find(p => p.productId === this.product.id);
+                    this.currentBid = product.bid;
+                    console.log(this.currentBid);
+                });
+        }
     }
 
 }
